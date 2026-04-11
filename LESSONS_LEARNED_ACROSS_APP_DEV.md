@@ -1,0 +1,188 @@
+# Lessons Learned Across App Development
+
+Universal lessons that apply to all iOS app projects. Update this file
+whenever a significant lesson is learned. Copy to all relevant repos and
+push to GitHub when updated.
+
+---
+
+## Xcode as Primary Build Method (Not EAS)
+
+EAS free tier monthly build quota is easily exhausted during iterative
+debugging. Use Xcode local archive for all production builds.
+
+- EAS is reserved for exceptional cases only
+- Always check `eas build:list --platform ios --limit 5` before triggering
+  any EAS build
+- Cancel queued EAS builds immediately via expo.dev if plans change
+
+---
+
+## Version & Build Number Workflow
+
+Update BOTH files before every archive. Use Terminal — do not rely on the
+Xcode GUI as it may not save correctly.
+
+**Step 1 — Update Info.plist (hardcoded values required):**
+```bash
+sed -i '' 's/<string>OLD_VERSION<\/string>/<string>NEW_VERSION<\/string>/' \
+  ios/AppName/Info.plist
+sed -i '' 's|<string>OLD_BUILD</string>|<string>NEW_BUILD</string>|' \
+  ios/AppName/Info.plist
+```
+
+⚠️ Do NOT use `$(MARKETING_VERSION)` or `$(CURRENT_PROJECT_VERSION)` variables
+in Info.plist — this causes CompileAssetCatalogVariant failures at archive time.
+Always use hardcoded values.
+
+**Step 2 — Update project.pbxproj:**
+```bash
+sed -i '' 's/MARKETING_VERSION = OLD;/MARKETING_VERSION = NEW;/g' \
+  ios/AppName.xcodeproj/project.pbxproj
+sed -i '' 's/CURRENT_PROJECT_VERSION = OLD;/CURRENT_PROJECT_VERSION = NEW;/g' \
+  ios/AppName.xcodeproj/project.pbxproj
+```
+
+**Step 3 — Update app.json version to match.**
+
+**Step 4 — Verify in Xcode General tab** that Version and Build show correctly.
+
+**Step 5 — Commit all three files before archiving.**
+
+### Build Number Convention
+- Build numbers increment globally — never reset between versions
+- Check App Store Connect → TestFlight → iOS for full build history
+
+---
+
+## Archive Steps (Every Release)
+
+1. **Product → Clean Build Folder** (Shift + Cmd + K)
+2. **Product → Archive**
+3. In Organizer → **Distribute App** → select **App Store Connect** → **Distribute**
+   - Use App Store Connect (not TestFlight Internal Only) — gives you both
+     TestFlight testing AND App Store submission from the same build
+4. Install via TestFlight on a physical device and test before submitting for review
+5. In App Store Connect, attach build to submission manually — easy to miss
+
+---
+
+## Signing
+
+- Use **manual signing** on the **Release tab** in Signing & Capabilities
+- Automatic signing fails for distribution builds
+- Always verify signing on the Release tab specifically — Debug tab settings
+  do not affect archive builds
+
+---
+
+## Xcode Quirks with Expo/React Native
+
+- `expo-updates` must be disabled — it conflicts with local Xcode builds.
+  Purge `EXUpdates` from Pods after disabling.
+- Use `DevSettings.reload()` not `Updates.reloadAsync()` in DeviceErrorBoundary
+  files — expo-updates is removed.
+- Remove any Metro cache-wiping blocks from `metro.config.js` — they break
+  production builds in Xcode's sandbox.
+- `babel-plugin-module-resolver` is required for `@/` path aliases to resolve
+  in Xcode's sandbox. Metro does not read `tsconfig.json` paths.
+- Always run `pod install` from the `ios/` directory after adding or removing
+  native dependencies.
+- `appVersionSource: remote` in eas.json is irrelevant for Xcode builds —
+  ignore it.
+
+---
+
+## Splash Screen Fix (expo-splash-screen)
+
+`SplashScreen.hideAsync()` returns `undefined` on the first call in release
+builds on physical iOS devices. The splash screen stays frozen until
+`hideAsync()` actually succeeds. This is a known `expo-splash-screen` bug.
+
+### Fix — use this pattern in _layout.jsx for every app:
+```js
+const hideSplash = async () => {
+  let attempts = 0;
+  while (attempts < 10) {
+    const result = await SplashScreen.hideAsync();
+    if (result !== undefined) break;
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+  }
+};
+
+useEffect(() => {
+  const timeout = setTimeout(hideSplash, 1500);
+  return () => clearTimeout(timeout);
+}, []);
+
+useEffect(() => {
+  if (isReady && disclaimerChecked) {
+    hideSplash();
+  }
+}, [isReady, disclaimerChecked]);
+```
+
+- Call `hideSplash()` instead of `SplashScreen.hideAsync()` everywhere
+- The 1.5s timeout is a failsafe — normal flow hides splash as soon as
+  isReady and disclaimerChecked are both true
+- Remove the render gate (`if (!isReady) return null`) — it causes permanent
+  blank screens if async init hangs
+- Apply this fix proactively to every new app before first App Store submission
+
+---
+
+## Data Isolation Verification Checklist
+
+When fixing any bug related to data isolation (e.g. devices sharing history
+or alerts), always verify in this order:
+
+1. **Backend** filters data by device ID (`WHERE device_id = ?` in every
+   relevant query)
+2. **Frontend** sends device ID on every request (no unguarded API calls)
+3. **End-to-end test** with two real physical devices — confirm data does
+   not bleed across
+
+Sending `deviceId` on the frontend means nothing if the backend ignores it.
+Always verify the backend first.
+
+---
+
+## Two Machine Setup
+
+- **Mac Studio** (username: `cg`) — primary dev machine
+- **MacBook Air** (username: `carltongrizzle`) — secondary machine
+- Paths may differ between machines — always confirm before running commands
+- Not all repos are cloned on both machines — verify with `ls ~/Projects/Apps/`
+  before starting work on a machine
+
+---
+
+## Deployment
+
+- Railway was explored and ruled out as a deployment platform — do not suggest it
+- Vercel or alternative platforms to be reconsidered when ready to deploy
+
+---
+
+## Grep Coverage
+
+Always search all directories except `node_modules` when looking for code.
+The `__create/` directory has caused repeated failures when excluded from
+searches.
+```bash
+grep -rn "search_term" ./src --include="*.js" --include="*.jsx" \
+  --include="*.ts" --include="*.tsx"
+```
+
+---
+
+## Pre-Submission Checklist (Every App)
+
+Before submitting any app to the App Store for the first time:
+- [ ] Apply `hideSplash()` retry fix to `_layout.jsx`
+- [ ] Verify backend filters all user data by device ID
+- [ ] Test on a physical device via TestFlight (release build)
+- [ ] Test cold launch (fresh install, not warm restart)
+- [ ] Verify version and build numbers are correct in Xcode General tab
+- [ ] Attach build to submission manually in App Store Connect
