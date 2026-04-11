@@ -186,3 +186,58 @@ Before submitting any app to the App Store for the first time:
 - [ ] Test cold launch (fresh install, not warm restart)
 - [ ] Verify version and build numbers are correct in Xcode General tab
 - [ ] Attach build to submission manually in App Store Connect
+- [ ] Audit package.json — remove @anythingai/app and expo-updates before building
+- [ ] Verify all UI controls are fully functional (non-functional toggles trigger 2.3.1 rejection)
+
+---
+
+## Dependency Audit — Remove Platform-Specific Packages First
+
+When migrating away from a platform (e.g., Anything.ai), the very first step
+is auditing `package.json` and removing all platform-specific packages before
+doing anything else.
+
+In SFF's case, `@anythingai/app` (v0.1.96) remained as a dependency long after
+migration began. It brought in a duplicate `expo-router` which caused a
+`ViewManagerAdapter` duplicate registration crash that froze the splash screen
+across all production builds. This took months to identify because the root
+cause was hidden inside `node_modules`, not in source files.
+
+SCF had the identical dependency (`@anythingai/app: 0.1.96`) and would have
+hit the same freeze.
+
+Always run before building any app:
+  cat package.json | grep -E "@anythingai|expo-updates|expo-dev-client"
+  find node_modules -name "expo-router" -type d -maxdepth 4
+
+- @anythingai/app must be fully removed — not just unused
+- expo-updates must be fully removed (not just disabled) — leaving it in
+  contaminates the Pods project with EXUpdates
+- expo-dev-client as a direct dependency causes Release builds to launch
+  as dev client builds, masking real production behavior
+
+---
+
+## Non-Functional Features Trigger App Store Rejection
+
+App Store Guideline 2.3.1 covers misleading apps. If UI controls (e.g., filter
+toggles) are visible but have no effect on app behavior, Apple will reject the
+submission. All UI controls must be fully wired before submission.
+
+For SCF specifically: the four cosmetics filter toggles (showSyntheticFragrances,
+showParabens, showPFAS, showSulfates) must be connected to backend ingredient
+matching logic before first submission.
+
+---
+
+## LESSONS_LEARNED Lives in SimplyFacts/dev-notes (GitHub)
+
+This file is the single source of truth. It lives at:
+  https://github.com/SimplyFacts/dev-notes
+
+On any machine:
+  cd ~/Projects/Apps/dev-notes && git pull   # start of session
+  ... make additions (append only, never overwrite) ...
+  git add . && git commit -m "lessons: <topic>" && git push
+
+Never store this file only locally. Always push after updating.
