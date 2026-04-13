@@ -241,3 +241,23 @@ On any machine:
   git add . && git commit -m "lessons: <topic>" && git push
 
 Never store this file only locally. Always push after updating.
+
+---
+
+## Partial Migrations Are Dangerous
+
+When migrating a feature (e.g., from backend to local AsyncStorage), ALL files
+touching that feature must be updated in the same pass. A partial migration
+leaves the app in an inconsistent state that may not be immediately visible.
+
+SFF example: useScanHistory.js and alertsStore.js were migrated to local
+AsyncStorage, but settingsActions.js was not updated — it still calls
+/api/scan-history and /api/alerts for clear operations. This means "Clear
+History" and "Clear Alerts" silently fail for SFF users on the live app.
+
+Pending fix: Update SFF settingsActions.js to use local AsyncStorage directly:
+- handleClearScanHistory: call AsyncStorage.removeItem(HISTORY_KEY) directly
+- handleClearAlerts: call useAlertsStore.getState().clearAlerts() directly
+No backend calls needed for either operation.
+
+Always audit ALL files touching a migrated feature before shipping.
