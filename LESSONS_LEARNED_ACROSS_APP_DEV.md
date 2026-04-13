@@ -392,3 +392,33 @@ Data sources by app:
 Before starting the next app: create SimplyFacts/shared-lib, extract the
 above, publish as a private npm package, and have all apps install it as a
 dependency. This ensures fixes propagate to all apps automatically.
+
+---
+
+## SFF Backend Decommission Plan
+
+SFF's Anything.ai backend currently does two things:
+
+1. Product cache (Neon/Postgres) — stores scanned products for 30 days to
+   avoid repeat Open Food Facts calls. Not essential — Open Food Facts is fast
+   and TanStack Query already caches client-side for 30 minutes.
+
+2. filterFalsePositiveAllergens() — filters milk allergen false positives from
+   plant-based products (almond milk, oat milk, etc.). This is real domain
+   logic worth keeping — but it can be moved client-side into useProduct.js
+   as a pure function with no backend needed.
+
+Migration plan:
+1. Copy filterFalsePositiveAllergens() from web/src/app/api/products/route.js
+   into apps/mobile/src/hooks/useProduct.js
+2. Apply it to the formatted product data after the Open Food Facts response
+3. Replace the two-step backend fetch in fetchProduct() with a single direct
+   Open Food Facts call (same pattern as SCF)
+4. Update settingsActions.js to use local AsyncStorage for clear operations
+   (currently still hits backend — documented earlier)
+5. Decommission the Anything.ai hosted backend once confirmed working
+6. Archive or delete the apps/web directory from the SFF repo
+
+Expected result: SFF and SCF have identical architecture — both call their
+respective Open*Facts APIs directly, both store history and alerts locally.
+No backend, no hosting costs, no Anything.ai dependency anywhere.
