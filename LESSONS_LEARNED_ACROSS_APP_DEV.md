@@ -261,3 +261,59 @@ Pending fix: Update SFF settingsActions.js to use local AsyncStorage directly:
 No backend calls needed for either operation.
 
 Always audit ALL files touching a migrated feature before shipping.
+
+---
+
+## SCF Pending Work (Pre-Submission)
+
+### Alert Matching Architecture — Needs Refactor
+SCF has two independent alert matching systems that both need fixing:
+
+1. matchAlerts() in alertMatching.js — used for AlertsSection banner at top
+   of product screen. Problems:
+   - Does not use preset variations array from alertPresets.js
+   - "Fragrance / Parfum" alert will not match "fragrance" in ingredients text
+   - "BHA (Butylated Hydroxyanisole)" alert will not match "BHA" or
+     "butylated hydroxyanisole" in ingredients text
+   - Same problem for all multi-word or slash-separated preset names
+   - CATEGORY_MAPPING is food-focused (dairy, gluten, peanuts) — not cosmetics
+
+2. hasAlert() in ingredientCategoryDetection.js — used for highlighting
+   individual ingredients in Full Ingredients List. Same variations problem.
+   ALERT_CATEGORY_MAPPING is also food-focused.
+
+### Food Logic That Must Be Replaced With Cosmetics Equivalents
+These files contain SFF food logic that was never updated for SCF:
+- ingredientCategories.js — 425 lines of food additive categories (E-numbers,
+  sweeteners, dairy, gluten, etc.) — replace with cosmetics categories
+  (parabens, PFAS, sulfates, synthetic fragrances, endocrine disruptors,
+  formaldehyde releasers, sunscreen chemicals, contaminants, animal-derived)
+- additiveCategories.js — large file with food E-numbers and sweetener
+  detection — evaluate what if anything is needed for cosmetics
+- CATEGORY_MAPPING in alertMatching.js — food allergen mapping, replace with
+  cosmetics preset category mapping
+- ALERT_CATEGORY_MAPPING in ingredientCategories.js — food categories, replace
+
+### Planned Fix Architecture
+1. Add resolveAlertVariations(alertName) to alertPresets.js — returns
+   variations array for any preset name, falls back to [alertName] for
+   custom alerts
+2. Pass detectedIngredients into matchAlerts() — use pre-computed detection
+   results for the 6 auto-detected categories (syntheticFragrances, parabens,
+   pfas, sulfates, artificialColors, artificialIngredients)
+3. Update hasAlert() in ingredientCategoryDetection.js to also use
+   resolveAlertVariations()
+4. Replace ingredientCategories.js food data with cosmetics-relevant categories
+5. Evaluate and slim down or replace additiveCategories.js
+
+### Other Pending SCF Items
+- All Clear badge: show when no ingredient categories detected, with explainer
+  that appears on first view and on tap
+- ArtificialIngredientsSection: confirm return null when empty (consistent
+  with other sections)
+- App Store copy audit — Guidelines 2.3.1 and 1.4.1
+- Version/build numbers set correctly in Xcode before first archive
+- Xcode archive and TestFlight build
+- TestFlight test on physical device
+- SFF settingsActions.js still hits backend for clear operations — fix before
+  next SFF release
