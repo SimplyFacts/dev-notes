@@ -317,3 +317,31 @@ These files contain SFF food logic that was never updated for SCF:
 - TestFlight test on physical device
 - SFF settingsActions.js still hits backend for clear operations — fix before
   next SFF release
+
+---
+
+## Forking Is Fast But Carries Hidden Debt
+
+Forking an existing app to create a related app is tempting because it provides
+a head start on shared infrastructure. But every inherited file needs to be
+explicitly audited against the new app's domain — not assumed relevant just
+because it compiled without errors.
+
+SCF was forked from SFF. The cost of that fork:
+- Inherited Anything.ai scaffolding caused the same splash freeze that took
+  months to debug in SFF — same root cause, same fix needed
+- Food-specific logic (additiveCategories.js 680 lines, ingredientCategories.js
+  425 lines, alertMatching.js CATEGORY_MAPPING) was never updated for cosmetics
+  and went unnoticed until real user testing
+- Two independent alert matching systems both had the same fundamental flaw
+- Dead code (deviceId.js, useHandleStreamResponse.js, usePreventBack.js, auth
+  utilities) had to be found and removed manually
+
+The better approach: start from a clean scaffold, then deliberately port only
+what is genuinely relevant to the new app's domain. This forces a conscious
+decision about every file rather than inheriting everything and discovering
+problems through testing.
+
+Rule: when forking, create an explicit audit checklist of every non-trivial
+file in the source app and mark each as: keep as-is / port and adapt /
+replace entirely / delete. Do this before writing any new code.
