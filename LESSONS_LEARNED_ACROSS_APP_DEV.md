@@ -266,8 +266,9 @@ Always audit ALL files touching a migrated feature before shipping.
 
 ## SCF Pending Work (Pre-Submission)
 
-### Alert Matching Architecture — Needs Refactor
-SCF has two independent alert matching systems that both need fixing:
+### Alert Matching Architecture — COMPLETED
+SCF had two independent alert matching systems that both needed fixing.
+Both are now resolved:
 
 1. matchAlerts() in alertMatching.js — used for AlertsSection banner at top
    of product screen. Problems:
@@ -282,8 +283,8 @@ SCF has two independent alert matching systems that both need fixing:
    individual ingredients in Full Ingredients List. Same variations problem.
    ALERT_CATEGORY_MAPPING is also food-focused.
 
-### Food Logic That Must Be Replaced With Cosmetics Equivalents
-These files contain SFF food logic that was never updated for SCF:
+### Food Logic Replaced With Cosmetics Equivalents — COMPLETED
+These files contained SFF food logic that was replaced for SCF:
 - ingredientCategories.js — 425 lines of food additive categories (E-numbers,
   sweeteners, dairy, gluten, etc.) — replace with cosmetics categories
   (parabens, PFAS, sulfates, synthetic fragrances, endocrine disruptors,
@@ -345,3 +346,49 @@ problems through testing.
 Rule: when forking, create an explicit audit checklist of every non-trivial
 file in the source app and mark each as: keep as-is / port and adapt /
 replace entirely / delete. Do this before writing any new code.
+
+---
+
+## SimplyFacts App Family — Shared Library Architecture
+
+Carlton plans to build multiple apps in the SimplyFacts family:
+- SimplyFoodFacts (SFF) — live on App Store
+- SimplyCosmeticsFacts (SCF) — in development
+- Simply Household Cleaners Facts — planned
+- Simply OTC Medicines Facts — planned
+
+Each app scans barcodes and flags ingredients by category using Open*Facts
+databases (Open Food Facts, Open Beauty Facts, Open Products Facts).
+
+DO NOT fork between apps. Instead, extract shared code into a dedicated
+shared package before starting the next app:
+
+  github.com/SimplyFacts/shared-lib
+
+What belongs in shared-lib:
+- resolveAlertVariations() and the PRESET_VARIATIONS_MAP pattern
+- matchAlerts() core matching logic (domain-agnostic)
+- useScanHistory() — identical across all apps, only the AsyncStorage key differs
+- alertsStore.js — identical across all apps, only the AsyncStorage key differs
+- settingsActions.js — identical across all apps
+- hideSplash retry pattern (_layout.jsx)
+- DisclaimerModal component
+- ProductHeader, CollapsibleSection, SectionErrorBoundary components
+- useProduct() hook structure (each app provides its own fetchProduct impl)
+
+What stays per-app:
+- alertPresets.js — domain-specific ingredient categories and variations
+- cosmeticCategories.js / foodCategories.js / householdCategories.js
+- ingredientMatcher.js — domain-specific taxonomy IDs and detection logic
+- Product screen UI — domain-specific sections and display
+- App Store metadata, icons, screenshots
+
+Data sources by app:
+- SFF: Open Food Facts (world.openfoodfacts.org/api/v0/product/{barcode}.json)
+- SCF: Open Beauty Facts (world.openbeautyfacts.org/api/v0/product/{barcode}.json)
+- Household: Open Products Facts (world.openproductsfacts.org/api/v0/product/{barcode}.json)
+- OTC Medicines: Open Food Facts (medicines are in OBF) or RxNorm/DailyMed API
+
+Before starting the next app: create SimplyFacts/shared-lib, extract the
+above, publish as a private npm package, and have all apps install it as a
+dependency. This ensures fixes propagate to all apps automatically.
