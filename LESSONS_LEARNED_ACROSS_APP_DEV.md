@@ -443,3 +443,14 @@ with vision difficulties or when label text is very small.
 Applies to: SFF, SCF, and all future SimplyFacts family apps.
 When building the shared-lib package, include this as a shared component
 (MagnifyingGlassView or similar) so all apps get it automatically.
+
+---
+
+## SimplyFacts Family — Unified Contact Email
+
+All SimplyFacts apps use a single support email:
+  simplyfactsfamily@gmail.com
+
+Pending: Update SFF privacy policy and App Store listing to replace
+SimplyFoodFacts@gmail.com with simplyfactsfamily@gmail.com in the next
+SFF release.
