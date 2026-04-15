@@ -422,3 +422,10 @@ Migration plan:
 Expected result: SFF and SCF have identical architecture — both call their
 respective Open*Facts APIs directly, both store history and alerts locally.
 No backend, no hosting costs, no Anything.ai dependency anywhere.
+
+Additional SFF UI improvements to port from SCF after backend decommission:
+- Dynamic "No concerns found" card with accurate checked categories list
+- noCategoriesFound logic to gate the card correctly
+- Alert matching variations fix — preset names like "Dairy Products" may have
+  the same matching problem SCF had with "Fragrance / Parfum"
+- Remove or update any misleading allergen badge language
