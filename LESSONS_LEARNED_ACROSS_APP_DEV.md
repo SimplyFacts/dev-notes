@@ -429,3 +429,17 @@ Additional SFF UI improvements to port from SCF after backend decommission:
 - Alert matching variations fix — preset names like "Dairy Products" may have
   the same matching problem SCF had with "Fragrance / Parfum"
 - Remove or update any misleading allergen badge language
+
+---
+
+## SimplyFacts Family — Future Features Backlog
+
+### Magnifying Glass / Label Zoom (All SimplyFacts Apps)
+When a product is not found in the database, add an option for users to use
+their camera as a magnifying glass to zoom in on the physical product label
+for easier reading. Useful for products not yet in the database and for users
+with vision difficulties or when label text is very small.
+
+Applies to: SFF, SCF, and all future SimplyFacts family apps.
+When building the shared-lib package, include this as a shared component
+(MagnifyingGlassView or similar) so all apps get it automatically.
