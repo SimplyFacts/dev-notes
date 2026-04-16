@@ -512,3 +512,34 @@ render crashes:
 
 Applies to: isPresetAlreadyAdded(), isPresetIngredient(), and any similar
 utility that processes stored alert data.
+
+---
+
+## SimplyFacts Family — Dietary Profiles (Future Feature)
+
+Dietary profile presets allow users to add a curated set of ingredient alerts
+in one tap based on their dietary or lifestyle needs (e.g. Halal, Vegan,
+Cruelty-Free). This is relevant for both food and cosmetics apps.
+
+### Current state in SCF
+The dietary profiles feature is already partially built in SCF but has no UI
+entry point — it is not visible or accessible to users:
+- dietaryProfiles.js — defines DIETARY_PROFILES array and getNewIngredients()
+- DietaryProfileModal.jsx — modal component exists and renders correctly
+- DietaryProfileCard.jsx — card component exists
+- useAlertHandlers.js — handleProfilePress and applyProfile are wired
+- alerts.jsx — DietaryProfileModal is rendered but no trigger card exists
+
+To activate in SCF: add DietaryProfileCard tiles to the Alerts screen above
+or below the Quick Add preset categories, wired to handleProfilePress.
+
+### Planned expansion to all SimplyFacts apps
+When building the shared-lib package, dietary profiles should be included as
+a shared feature. Each app provides its own domain-specific profiles:
+- SFF: Vegan, Vegetarian, Halal, Kosher, Gluten-Free, Dairy-Free
+- SCF: Vegan, Cruelty-Free, Halal, Fragrance-Free, Pregnancy-Safe
+- Household: Fragrance-Free, Pet-Safe, Child-Safe, Eco-Friendly
+- OTC Medicines: (TBD based on drug interaction categories)
+
+The core UI and handler logic is identical across apps — only the profile
+definitions differ per domain.
