@@ -543,3 +543,21 @@ a shared feature. Each app provides its own domain-specific profiles:
 
 The core UI and handler logic is identical across apps — only the profile
 definitions differ per domain.
+
+---
+
+## Screenshot Mock Product (SCF)
+
+A mock product is embedded in SCF's useProduct.js for capturing "No concerns
+found" screenshots. To activate:
+
+1. Open ~/Projects/Apps/SimplyCosmeticsFacts/anything/apps/mobile/src/hooks/useProduct.js
+2. Uncomment this line:
+     // if (barcode === MOCK_BARCODE) return MOCK_PRODUCT;
+3. Start Expo and scan barcode 0000000000000
+4. The "Calm Skin Balm" by Verdana product will appear with clean ingredients
+   and the green "No concerns found" card
+5. Re-comment the line when done — never ship with it active
+
+The mock uses a real Unsplash image URL so the product photo renders correctly.
+Barcode image for scanning is saved in the SimplyFacts dev-notes repo.
