@@ -444,6 +444,38 @@ Applies to: SFF, SCF, and all future SimplyFacts family apps.
 When building the shared-lib package, include this as a shared component
 (MagnifyingGlassView or similar) so all apps get it automatically.
 
+### OCR Ingredient Scanning (SCF, then all SimplyFacts Apps)
+When a product has no ingredients in the database, offer users the option to
+photograph the ingredient list. Use Apple's Vision framework (on-device, free,
+no backend, works offline) to extract the text via OCR. Feed the extracted
+text directly into the existing detectAllIngredients() function — no changes
+to matching logic needed.
+
+Implementation notes:
+- Vision framework is accessible via expo-camera on iOS
+- Show a confirmation step so users can review/correct OCR text before use
+- On-device processing keeps user data private and avoids API costs
+- Applies to SFF, SCF, and all future SimplyFacts family apps
+- When building shared-lib, include OCR as a shared hook (useOCRIngredients
+  or similar)
+
+### Open Beauty Facts Contribution Flow (SCF)
+After OCR extracts an ingredient list for a product not in the database, offer
+users an opt-in flow to contribute the data back to Open Beauty Facts:
+
+  Barcode (already known) + OCR ingredients text + product name
+  → user reviews → submits to Open Beauty Facts write API
+
+Notes:
+- Must be fully opt-in and transparent — never submit without explicit user
+  confirmation
+- User reviews OCR text before submission to prevent polluting the database
+  with garbled text
+- Contributions improve the database for all SCF users over time (network
+  effect)
+- Decide on attribution: SimplyFacts account vs. anonymous contributions
+- Open Beauty Facts write API docs: https://wiki.openfoodfacts.org/API
+
 ---
 
 ## SimplyFacts Family — Unified Contact Email
@@ -454,3 +486,29 @@ All SimplyFacts apps use a single support email:
 Pending: Update SFF privacy policy and App Store listing to replace
 SimplyFoodFacts@gmail.com with simplyfactsfamily@gmail.com in the next
 SFF release.
+
+
+---
+
+## Batch Operations on Lists — Always Use Batch Functions
+
+When performing an action on multiple items (e.g. adding or removing a list
+of alerts), always use a single batch operation rather than looping over
+individual async handlers.
+
+Bad pattern (causes sequential state updates, UI flicker, unpredictable order):
+  items.forEach(item => addAlert(item.name))
+
+Good pattern (single state update, atomic, predictable):
+  batchAddAlerts(items.map(i => i.name))
+
+Applied in SCF: "Add all" in Quick Add preset categories uses batchAddAlerts().
+"Remove all" uses batchRemoveAlerts(). Both were added to alertsStore.js.
+
+Also add defensive typeof === "string" guards to any function that calls
+.toLowerCase() on data from AsyncStorage — malformed stored data can cause
+render crashes:
+  if (!ingredientName || typeof ingredientName !== "string") return false;
+
+Applies to: isPresetAlreadyAdded(), isPresetIngredient(), and any similar
+utility that processes stored alert data.
