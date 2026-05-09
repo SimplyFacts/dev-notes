@@ -561,3 +561,15 @@ found" screenshots. To activate:
 
 The mock uses a real Unsplash image URL so the product photo renders correctly.
 Barcode image for scanning is saved in the SimplyFacts dev-notes repo.
+
+---
+
+## SFF — Pending Action Items
+
+- [ ] Next SFF submission: update App Store Connect privacy policy URL from
+      `simply-food-facts.created.app/privacy` to
+      `https://raw.githubusercontent.com/SimplyFacts/Legal/main/simplyfoodfacts-privacy.md`
+- [ ] Next SFF submission: add terms of service URL to App Store Connect:
+      `https://raw.githubusercontent.com/SimplyFacts/Legal/main/simplyfoodfacts-terms.md`
+- [ ] Next SCF submission: add terms of service URL to App Store Connect:
+      `https://raw.githubusercontent.com/SimplyFacts/Legal/main/simplycosmeticsfacts-terms.md`
